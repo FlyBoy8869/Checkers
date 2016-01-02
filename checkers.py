@@ -99,17 +99,12 @@ class Board(QWidget):
 
     def mousePressEvent(self, me):
         row, col = self._calc_row_col(me.x(), me.y())
-        ulx = col * 75
-        uly = row * 75
-        lrx = col * 75 + 74
-        lry = row * 75 + 74
-
-        for checker in checkers:
-            if ulx <= checker.x <= lrx and uly <= checker.y <= lry:
-                self.moving_checker = checker
-                print(checker)
-                self.starting_row = row
-                self.starting_col = col
+        checker = self.find_checker(row, col, checkers)
+        if checker:
+            self.moving_checker = checker
+            print(checker)
+            self.starting_row = row
+            self.starting_col = col
 
     def mouseMoveEvent(self, me):
         if self.moving_checker:
@@ -125,36 +120,60 @@ class Board(QWidget):
         square_color = self.board[self.ending_row][self.ending_col]
         is_square_taken = self._is_square_taken(self.ending_row, self.ending_col)
         row_delta, col_delta = self.distance()
+        print("ex={}, ey={}, er={}, ec={}, st={}, rd={}, cd={}".format(me.x(), me.y(), self.ending_row, self.ending_col, is_square_taken, row_delta, col_delta))
 
-        if 0 < row_delta <= 2 and 0 < col_delta <= 2 and (square_color != "red") and not is_square_taken:
-            if self.moving_checker.color == "black" and self.down():
-                self.valid_move = True
-                if self.ending_row == 7:
-                    self.moving_checker.king_me()
-            elif self.moving_checker.is_king:
-                self.valid_move = True
+        if self.moving_checker is not None:
+            if 0 < row_delta <= 2 and 0 < col_delta <= 2 and (square_color != "red") and not is_square_taken:
+                if self.moving_checker.color == "black" and self.down():
+                    if row_delta == 2:
+                        if self.left():
+                            checker = self.find_checker(self.ending_row - 1, self.ending_col + 1, checkers)
+                        else:
+                            checker = self.find_checker(self.ending_row - 1, self.ending_col - 1, checkers)
 
-            if self.moving_checker.color == "red" and self.up():
-                self.valid_move = True
-                if self.ending_row == 0:
-                    self.moving_checker.king_me()
-            elif self.moving_checker.is_king:
-                self.valid_move = True
+                        if checker and checker.color != "black":
+                            self.valid_move = True
+                            checkers.remove(checker)
+                    else:
+                        self.valid_move = True
 
-        if self.moving_checker and self.valid_move:
-            x = self.ending_col * Board.SQUARE
-            y = self.ending_row * Board.SQUARE
-            self.moving_checker.x = x
-            self.moving_checker.y = y
-        else:
-            x = self.starting_col * Board.SQUARE
-            y = self.starting_row * Board.SQUARE
-            self.moving_checker.x = x
-            self.moving_checker.y = y
-        self.update()
+                    if self.ending_row == 7:
+                        self.moving_checker.king_me()
+                elif self.moving_checker.is_king:
+                    self.valid_move = True
 
-        self.moving_checker = None
-        self.valid_move = False
+                if self.moving_checker.color == "red" and self.up():
+                    if row_delta == 2:
+                        if self.left():
+                            checker = self.find_checker(self.ending_row + 1, self.ending_col + 1, checkers)
+                        else:
+                            checker = self.find_checker(self.ending_row + 1, self.ending_col - 1, checkers)
+
+                        if checker and checker.color != "red":
+                            self.valid_move = True
+                            checkers.remove(checker)
+                    else:
+                        self.valid_move = True
+
+                    if self.ending_row == 0:
+                        self.moving_checker.king_me()
+                elif self.moving_checker.is_king:
+                    self.valid_move = True
+
+            if self.valid_move:
+                x = self.ending_col * Board.SQUARE
+                y = self.ending_row * Board.SQUARE
+                self.moving_checker.x = x
+                self.moving_checker.y = y
+            else:
+                x = self.starting_col * Board.SQUARE
+                y = self.starting_row * Board.SQUARE
+                self.moving_checker.x = x
+                self.moving_checker.y = y
+            self.update()
+
+            self.moving_checker = None
+            self.valid_move = False
 
     def _calc_row_col(self, x, y):
         col = int(x / Board.SQUARE)
@@ -164,9 +183,8 @@ class Board(QWidget):
     def _is_square_taken(self, row, col):
         for checker in checkers:
             checker_row, checker_col = self._calc_row_col(checker.x, checker.y)
-            if checker_row == row and checker_col == col:
+            if checker_row == row and checker_col == col and checker is not self.moving_checker:
                 return True
-
         return False
 
     def _setup_board(self):
@@ -197,53 +215,25 @@ class Board(QWidget):
             y = row * 75
             checkers.append(Checker(x, y, "red", self.i_checker_red, self.image_crown_red))
 
-    @staticmethod
-    def find_checker(row, col, chkers):
+    def find_checker(self, row, col, chkers):
         for checker in chkers:
-            if checker.row == row and checker.col == col:
+            checker_row, checker_col = self._calc_row_col(checker.x, checker.y)
+            if checker_row == row and checker_col == col:
                 return checker
 
         return None
 
     def left(self):
-        if self.starting_col > self.ending_col:
-            return True
-
-        return False
+        return True if self.starting_col > self.ending_col else False
 
     def right(self):
-        if self.starting_col < self.ending_col:
-            return True
-
-        return False
+        return True if self.starting_col < self.ending_col else False
 
     def up(self):
-        if self.starting_row > self.ending_row:
-            return True
-
-        return False
+        return True if self.starting_row > self.ending_row else False
 
     def down(self):
-        if self.starting_row < self.ending_row:
-            return True
-
-        return False
-
-    @staticmethod
-    def jumped(starting_row, starting_col, ending_row, ending_col):
-
-        row_delta, col_delta = Board.distance(starting_row, starting_col, ending_row, ending_col)
-
-        if row_delta == 2 or col_delta == 2:
-            if Board.up():
-                t_row = starting_row - 1
-            else:
-                t_row = starting_row + 1
-
-            if Board.left(starting_col, ending_col):
-                t_col = starting_col - 1
-            else:
-                t_col = starting_col + 1
+        return True if self.starting_row < self.ending_row else False
 
     def distance(self):
         return abs(self.starting_row - self.ending_row), abs(self.starting_col - self.ending_col)
