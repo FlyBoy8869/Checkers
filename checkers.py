@@ -63,6 +63,7 @@ class Board(QWidget):
         self.i_checker_red = self.checker_red
 
         self.board = self._setup_board()
+        self._place_checkers()
 
         self.show()
 
@@ -121,10 +122,11 @@ class Board(QWidget):
 
     def mouseReleaseEvent(self, me):
         self.ending_row, self.ending_col = self._calc_row_col(me.x(), me.y())
-        row_delta, col_delta = self.distance()
         square_color = self.board[self.ending_row][self.ending_col]
+        is_square_taken = self._is_square_taken(self.ending_row, self.ending_col)
+        row_delta, col_delta = self.distance()
 
-        if 0 < row_delta <= 2 and 0 < col_delta <= 2 and (square_color != "red"):
+        if 0 < row_delta <= 2 and 0 < col_delta <= 2 and (square_color != "red") and not is_square_taken:
             if self.moving_checker.color == "black" and self.down():
                 self.valid_move = True
                 if self.ending_row == 7:
@@ -159,9 +161,10 @@ class Board(QWidget):
         row = int(y / Board.SQUARE)
         return row, col
 
-    def _is_square_occupied(self):
+    def _is_square_taken(self, row, col):
         for checker in checkers:
-            if checker.row == self.current_row and checker.col == self.current_col:
+            checker_row, checker_col = self._calc_row_col(checker.x, checker.y)
+            if checker_row == row and checker_col == col:
                 return True
 
         return False
@@ -172,8 +175,6 @@ class Board(QWidget):
         for x in range(4):
             board.append(["red" if i % 2 == 0 else "black" for i in range(8)])
             board.append(["black" if i % 2 == 0 else "red" for i in range(8)])
-
-        self._place_checkers()
 
         return board
 
