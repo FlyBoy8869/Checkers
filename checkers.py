@@ -125,42 +125,22 @@ class Board(QWidget):
 
         if self.moving_checker is not None:
             if 0 < row_delta <= 2 and 0 < col_delta <= 2 and (square_color != "red") and not is_square_taken:
-                if self.moving_checker.color == "black" and self.down():
+                if self.moving_checker:
                     if row_delta == 2:
                         checker = self.get_jumped_checker()
-                        if checker and checker.color != "black":
+                        if checker and checker.color != self.moving_checker.color:
                             self.valid_move = True
                             checkers.remove(checker)
                     else:
                         self.valid_move = True
 
-                    if self.ending_row == 7:
+                    if self.ending_row == 0 or self.ending_row == 7:
                         self.moving_checker.king_me()
 
-                elif self.moving_checker.color == "black" and self.up() and self.moving_checker.is_king:
+                elif self.moving_checker.is_king:
                     if row_delta == 2:
                         checker = self.get_jumped_checker()
-                        if checker and checker.color != "black":
-                            self.valid_move = True
-                            checkers.remove(checker)
-                    else:
-                        self.valid_move = True
-
-                if self.moving_checker.color == "red" and self.up():
-                    if row_delta == 2:
-                        checker = self.get_jumped_checker()
-                        if checker and checker.color != "red":
-                            self.valid_move = True
-                            checkers.remove(checker)
-                    else:
-                        self.valid_move = True
-
-                    if self.ending_row == 0:
-                        self.moving_checker.king_me()
-                elif self.moving_checker.color == "red" and self.down() and self.moving_checker.is_king:
-                    if row_delta == 2:
-                        checker = self.get_jumped_checker()
-                        if checker and checker.color != "red":
+                        if checker and checker.color != self.moving_checker.color:
                             self.valid_move = True
                             checkers.remove(checker)
                     else:
