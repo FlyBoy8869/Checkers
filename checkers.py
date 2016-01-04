@@ -140,13 +140,11 @@ class Board(QWidget):
             if self.valid_move:
                 x = self.ending_col * Board.SQUARE
                 y = self.ending_row * Board.SQUARE
-                self.moving_checker.x = x
-                self.moving_checker.y = y
             else:
                 x = self.starting_col * Board.SQUARE
                 y = self.starting_row * Board.SQUARE
-                self.moving_checker.x = x
-                self.moving_checker.y = y
+            self.moving_checker.x = x
+            self.moving_checker.y = y
             self.update()
 
             self.moving_checker = None
