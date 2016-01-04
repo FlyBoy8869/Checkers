@@ -116,14 +116,14 @@ class Board(QWidget):
             self.update()
 
     def mouseReleaseEvent(self, me):
-        self.ending_row, self.ending_col = self._calc_row_col(me.x(), me.y())
-        square_color = self.board[self.ending_row][self.ending_col]
-        is_square_taken = self._is_square_taken(self.ending_row, self.ending_col)
-        row_delta, col_delta = self.distance()
-        # print("ex={}, ey={}, er={}, ec={}, st={}, rd={}, cd={}".format(me.x(), me.y(), self.ending_row, self.ending_col, is_square_taken, row_delta, col_delta))
-        # print("mc_x={}, mc_y={}".format(self.moving_checker.x, self.moving_checker.y))
-
         if self.moving_checker is not None:
+            self.ending_row, self.ending_col = self._calc_row_col(me.x(), me.y())
+            square_color = self.board[self.ending_row][self.ending_col]
+            is_square_taken = self._is_square_taken(self.ending_row, self.ending_col)
+            row_delta, col_delta = self.distance()
+            print("ex={}, ey={}, er={}, ec={}, st={}, rd={}, cd={}".format(me.x(), me.y(), self.ending_row, self.ending_col, is_square_taken, row_delta, col_delta))
+            print("mc_x={}, mc_y={}".format(self.moving_checker.x, self.moving_checker.y))
+
             if 0 < row_delta <= 2 and 0 < col_delta <= 2 and (square_color != "red") and not is_square_taken:
                 color = self.moving_checker.color
                 if row_delta == 2:
