@@ -120,31 +120,22 @@ class Board(QWidget):
         square_color = self.board[self.ending_row][self.ending_col]
         is_square_taken = self._is_square_taken(self.ending_row, self.ending_col)
         row_delta, col_delta = self.distance()
-        print("ex={}, ey={}, er={}, ec={}, st={}, rd={}, cd={}".format(me.x(), me.y(), self.ending_row, self.ending_col, is_square_taken, row_delta, col_delta))
-        print("mc_x={}, mc_y={}".format(self.moving_checker.x, self.moving_checker.y))
+        # print("ex={}, ey={}, er={}, ec={}, st={}, rd={}, cd={}".format(me.x(), me.y(), self.ending_row, self.ending_col, is_square_taken, row_delta, col_delta))
+        # print("mc_x={}, mc_y={}".format(self.moving_checker.x, self.moving_checker.y))
 
         if self.moving_checker is not None:
             if 0 < row_delta <= 2 and 0 < col_delta <= 2 and (square_color != "red") and not is_square_taken:
-                if self.moving_checker:
-                    if row_delta == 2:
-                        checker = self.get_jumped_checker()
-                        if checker and checker.color != self.moving_checker.color:
-                            self.valid_move = True
-                            checkers.remove(checker)
-                    else:
+                color = self.moving_checker.color
+                if row_delta == 2:
+                    checker = self.get_jumped_checker()
+                    if checker and checker.color != self.moving_checker.color:
                         self.valid_move = True
+                        checkers.remove(checker)
+                elif (color == "black" and self.down()) or (color == "red" and self.up()):
+                    self.valid_move = True
 
-                    if self.ending_row == 0 or self.ending_row == 7:
-                        self.moving_checker.king_me()
-
-                elif self.moving_checker.is_king:
-                    if row_delta == 2:
-                        checker = self.get_jumped_checker()
-                        if checker and checker.color != self.moving_checker.color:
-                            self.valid_move = True
-                            checkers.remove(checker)
-                    else:
-                        self.valid_move = True
+                if self.ending_row == 0 or self.ending_row == 7:
+                    self.moving_checker.king_me()
 
             if self.valid_move:
                 x = self.ending_col * Board.SQUARE
