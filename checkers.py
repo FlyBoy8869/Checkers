@@ -131,10 +131,10 @@ class Board(QWidget):
                     if checker and checker.color != self.moving_checker.color:
                         self.valid_move = True
                         checkers.remove(checker)
-                elif (color == "black" and self.down()) or (color == "red" and self.up()):
+                elif ((color == "black" and self.down()) or (color == "red" and self.up())) or self.moving_checker.is_king:
                     self.valid_move = True
 
-                if self.ending_row == 0 or self.ending_row == 7:
+                if (self.ending_row == 0 or self.ending_row == 7) and not self.moving_checker.is_king:
                     self.moving_checker.king_me()
 
             if self.valid_move:
