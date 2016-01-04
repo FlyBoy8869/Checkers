@@ -121,16 +121,13 @@ class Board(QWidget):
         is_square_taken = self._is_square_taken(self.ending_row, self.ending_col)
         row_delta, col_delta = self.distance()
         print("ex={}, ey={}, er={}, ec={}, st={}, rd={}, cd={}".format(me.x(), me.y(), self.ending_row, self.ending_col, is_square_taken, row_delta, col_delta))
+        print("mc_x={}, mc_y={}".format(self.moving_checker.x, self.moving_checker.y))
 
         if self.moving_checker is not None:
             if 0 < row_delta <= 2 and 0 < col_delta <= 2 and (square_color != "red") and not is_square_taken:
                 if self.moving_checker.color == "black" and self.down():
                     if row_delta == 2:
-                        if self.left():
-                            checker = self.find_checker(self.ending_row - 1, self.ending_col + 1, checkers)
-                        else:
-                            checker = self.find_checker(self.ending_row - 1, self.ending_col - 1, checkers)
-
+                        checker = self.get_jumped_checker()
                         if checker and checker.color != "black":
                             self.valid_move = True
                             checkers.remove(checker)
@@ -139,16 +136,19 @@ class Board(QWidget):
 
                     if self.ending_row == 7:
                         self.moving_checker.king_me()
-                elif self.moving_checker.is_king:
-                    self.valid_move = True
+
+                elif self.moving_checker.color == "black" and self.up() and self.moving_checker.is_king:
+                    if row_delta == 2:
+                        checker = self.get_jumped_checker()
+                        if checker and checker.color != "black":
+                            self.valid_move = True
+                            checkers.remove(checker)
+                    else:
+                        self.valid_move = True
 
                 if self.moving_checker.color == "red" and self.up():
                     if row_delta == 2:
-                        if self.left():
-                            checker = self.find_checker(self.ending_row + 1, self.ending_col + 1, checkers)
-                        else:
-                            checker = self.find_checker(self.ending_row + 1, self.ending_col - 1, checkers)
-
+                        checker = self.get_jumped_checker()
                         if checker and checker.color != "red":
                             self.valid_move = True
                             checkers.remove(checker)
@@ -157,8 +157,14 @@ class Board(QWidget):
 
                     if self.ending_row == 0:
                         self.moving_checker.king_me()
-                elif self.moving_checker.is_king:
-                    self.valid_move = True
+                elif self.moving_checker.color == "red" and self.down() and self.moving_checker.is_king:
+                    if row_delta == 2:
+                        checker = self.get_jumped_checker()
+                        if checker and checker.color != "red":
+                            self.valid_move = True
+                            checkers.remove(checker)
+                    else:
+                        self.valid_move = True
 
             if self.valid_move:
                 x = self.ending_col * Board.SQUARE
@@ -218,10 +224,20 @@ class Board(QWidget):
     def find_checker(self, row, col, chkers):
         for checker in chkers:
             checker_row, checker_col = self._calc_row_col(checker.x, checker.y)
-            if checker_row == row and checker_col == col:
+            if checker_row == row and checker_col == col and checker is not self.moving_checker:
                 return checker
 
         return None
+
+    def get_jumped_checker(self):
+        if self.down():
+            t_row = self.ending_row - 1
+            t_col = self.ending_col + 1 if self.left() else self.ending_col - 1
+        elif self.up():
+            t_row = self.ending_row + 1
+            t_col = self.ending_col + 1 if self.left() else self.ending_col - 1
+
+        return self.find_checker(t_row, t_col, checkers)
 
     def left(self):
         return True if self.starting_col > self.ending_col else False
