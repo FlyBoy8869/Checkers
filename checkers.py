@@ -120,8 +120,6 @@ class Board(QWidget):
         square_color = self.board[self.ending_row][self.ending_col]
         is_square_taken = self._is_square_taken(self.ending_row, self.ending_col)
         row_delta, col_delta = self.distance()
-        # print("ex={}, ey={}, er={}, ec={}, st={}, rd={}, cd={}".format(me.x(), me.y(), self.ending_row, self.ending_col, is_square_taken, row_delta, col_delta))
-        # print("mc_x={}, mc_y={}".format(self.moving_checker.x, self.moving_checker.y))
 
         if self.moving_checker is not None:
             if 0 < row_delta <= 2 and 0 < col_delta <= 2 and (square_color != "red") and not is_square_taken:
@@ -138,17 +136,17 @@ class Board(QWidget):
                     self.moving_checker.king_me()
 
             if self.valid_move:
-                x = self.ending_col * Board.SQUARE
-                y = self.ending_row * Board.SQUARE
+                self.move_checker(self.ending_row, self.ending_col)
             else:
-                x = self.starting_col * Board.SQUARE
-                y = self.starting_row * Board.SQUARE
-            self.moving_checker.x = x
-            self.moving_checker.y = y
+                self.move_checker(self.starting_row, self.starting_col)
             self.update()
 
             self.moving_checker = None
             self.valid_move = False
+
+    def move_checker(self, row, col):
+        self.moving_checker.x = col * Board.SQUARE
+        self.moving_checker.y = row * Board.SQUARE
 
     def _calc_row_col(self, x, y):
         col = int(x / Board.SQUARE)
