@@ -117,18 +117,32 @@ class Board(QWidget):
 
     def mouseReleaseEvent(self, me):
         self.ending_row, self.ending_col = self._calc_row_col(me.x(), me.y())
+        if (0 > self.ending_row) or (self.ending_row > 7)\
+                or (0 > self.ending_col) or (self.ending_col > 7):
+            self.move_checker(self.starting_row, self.starting_col)
+            self.update()
+            return
+
         square_color = self.board[self.ending_row][self.ending_col]
         is_square_taken = self._is_square_taken(self.ending_row, self.ending_col)
         row_delta, col_delta = self.distance()
 
         if self.moving_checker is not None:
-            if 0 < row_delta <= 2 and 0 < col_delta <= 2 and (square_color != "red") and not is_square_taken:
+            if 0 < row_delta <= 2 and 0 < col_delta <= 2 and square_color != "red" and not is_square_taken:
                 color = self.moving_checker.color
-                if row_delta == 2:
+                # this enforces non-king forward jumps
+                if row_delta == 2 and ((color == "black" and self.down()) or (color == "red" and self.up())):
                     checker = self.get_jumped_checker()
                     if checker and checker.color != self.moving_checker.color:
                         self.valid_move = True
                         checkers.remove(checker)
+                # this handles kings jumping forwards or backwards
+                elif row_delta == 2 and self.moving_checker.is_king:
+                    checker = self.get_jumped_checker()
+                    if checker and checker.color != self.moving_checker.color:
+                        self.valid_move = True
+                        checkers.remove(checker)
+                # this handles single square movement
                 elif ((color == "black" and self.down()) or (color == "red" and self.up())) or self.moving_checker.is_king:
                     self.valid_move = True
 
