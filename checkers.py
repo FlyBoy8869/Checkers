@@ -28,6 +28,9 @@ class Checker(object):
         self.is_king = True
         self.image_to_draw = self.image_crowned
 
+    def set_image(self, image):
+        self.image_to_draw = image
+
     def __repr__(self):
         return "Checker({!r}, {!r}, {!r}, {!r}, {!r}".format(self.x, self.y, self.color, self.image, self.image_crowned)
 
@@ -56,6 +59,7 @@ class Board(QWidget):
 
         self.checker_black = QtGui.QPixmap("images/checker_black_nv_50x50.png")
         self.image_crown_black = QtGui.QPixmap("images/checker_black_nv_crowned_50x50.png")
+        self.checker_black_invalid = QtGui.QPixmap("images/checker_black_nv_invalid_50x50.png")
         self.checker_red = QtGui.QPixmap("images/checker_crab-1_50x50.png")
         self.image_crown_red = QtGui.QPixmap("images/checker_crab-1_crowned_50x50.png")
 
@@ -109,6 +113,14 @@ class Board(QWidget):
     def mouseMoveEvent(self, me):
         if self.moving_checker:
             self.current_row, self.current_col = self._calc_row_col(me.x(), me.y())
+            row_delta, col_delta = self.distance(self.starting_row, self.starting_col,
+                                                 self.current_row, self.current_col)
+            square_taken = self._is_square_taken(self.current_row, self.current_col)
+            square_color = self.board[self.current_row][self.current_col]
+            if not self._is_valid_move(row_delta, col_delta, square_color, square_taken):
+                self.moving_checker.set_image(self.checker_black_invalid)
+            else:
+                self.moving_checker.set_image(self.checker_black)
             print("x={}, y={}, row={}, col= {}".format(me.x(), me.y(), self.current_row, self.current_col))
 
             self.moving_checker.x = me.x() - 25 - 10
@@ -125,7 +137,8 @@ class Board(QWidget):
 
         square_color = self.board[self.ending_row][self.ending_col]
         is_square_taken = self._is_square_taken(self.ending_row, self.ending_col)
-        row_delta, col_delta = self.distance()
+        row_delta, col_delta = self.distance(self.starting_row, self.starting_col,
+                                             self.ending_row, self.ending_col)
 
         if self.moving_checker is not None:
             if 0 < row_delta <= 2 and 0 < col_delta <= 2 and square_color != "red" and not is_square_taken:
@@ -172,6 +185,12 @@ class Board(QWidget):
             checker_row, checker_col = self._calc_row_col(checker.x, checker.y)
             if checker_row == row and checker_col == col and checker is not self.moving_checker:
                 return True
+        return False
+
+    def _is_valid_move(self, rd, cd, sc, st):
+        if 0 < rd <= 2 and 0 < cd <= 2 and sc != "red" and not st:
+            return True
+
         return False
 
     def _setup_board(self):
@@ -232,8 +251,8 @@ class Board(QWidget):
     def down(self):
         return True if self.starting_row < self.ending_row else False
 
-    def distance(self):
-        return abs(self.starting_row - self.ending_row), abs(self.starting_col - self.ending_col)
+    def distance(self, starting_row, starting_col, ending_row, ending_col):
+        return abs(starting_row - ending_row), abs(starting_col - ending_col)
 
 
 def main():
