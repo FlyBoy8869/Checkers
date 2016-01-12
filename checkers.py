@@ -126,10 +126,15 @@ class Board(QWidget):
             square_color = self.board[self.current_row][self.current_col]
             not_starting_square = (self.current_row != self.starting_row) or (self.current_col != self.starting_col)
             if not self._is_valid_move(row_delta, col_delta, square_color, square_taken) and not_starting_square:
-                self.moving_checker.set_invalid()
+                jumped_checker = self.get_jumped_checker(self.starting_row, self.starting_col, self.current_row, self.current_col)
+                if row_delta == 2 and jumped_checker is None:
+                    print("mouseMoveEvent: row_delta = {}".format(row_delta))
+                    self.moving_checker.set_invalid()
+                else:
+                    self.moving_checker.set_invalid()
             else:
                 self.moving_checker.set_valid()
-            print("x={}, y={}, row={}, col= {}".format(me.x(), me.y(), self.current_row, self.current_col))
+            # print("x={}, y={}, row={}, col= {}".format(me.x(), me.y(), self.current_row, self.current_col))
 
             self.moving_checker.x = me.x() - 25 - 10
             self.moving_checker.y = me.y() - 25 - 10
@@ -153,13 +158,15 @@ class Board(QWidget):
                 color = self.moving_checker.color
                 # this enforces non-king forward jumps
                 if row_delta == 2 and ((color == "black" and self.down()) or (color == "red" and self.up())):
-                    checker = self.get_jumped_checker()
+                    checker = self.get_jumped_checker(self.starting_row, self.starting_col,
+                                                      self.ending_row, self.ending_col)
                     if checker and checker.color != self.moving_checker.color:
                         self.valid_move = True
                         checkers.remove(checker)
                 # this handles kings jumping forwards or backwards
                 elif row_delta == 2 and self.moving_checker.is_king:
-                    checker = self.get_jumped_checker()
+                    checker = self.get_jumped_checker(self.starting_row, self.starting_col,
+                                                      self.ending_row, self.ending_col)
                     if checker and checker.color != self.moving_checker.color:
                         self.valid_move = True
                         checkers.remove(checker)
@@ -237,13 +244,13 @@ class Board(QWidget):
 
         return None
 
-    def get_jumped_checker(self):
-        if self.down():
-            t_row = self.ending_row - 1
-            t_col = self.ending_col + 1 if self.left() else self.ending_col - 1
-        elif self.up():
-            t_row = self.ending_row + 1
-            t_col = self.ending_col + 1 if self.left() else self.ending_col - 1
+    def get_jumped_checker(self, starting_row, starting_col, ending_row, ending_col):
+        if self.down(starting_row, ending_row):
+            t_row = ending_row - 1
+            t_col = ending_col + 1 if self.left(starting_col, ending_col) else ending_col - 1
+        elif self.up(starting_row, ending_row):
+            t_row = ending_row + 1
+            t_col = ending_col + 1 if self.left(starting_col, ending_col) else ending_col - 1
 
         return self.find_checker(t_row, t_col, checkers)
 
