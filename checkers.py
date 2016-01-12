@@ -11,12 +11,13 @@ black_square = QtGui.QColor(0, 0, 0, 255)
 
 class Checker(object):
 
-    def __init__(self, x=0, y=0, color="black", image=None, crowned=None):
+    def __init__(self, x=0, y=0, color="black", image=None, crowned=None, invalid=None):
         self.x = x
         self.y = y
         self.color = color
         self.image = image
         self.image_crowned = crowned
+        self.image_invalid = invalid
         self.image_to_draw = image
         self.is_king = False
 
@@ -26,10 +27,16 @@ class Checker(object):
 
     def king_me(self):
         self.is_king = True
-        self.image_to_draw = self.image_crowned
+        self.set_image(self.image_crowned)
 
     def set_image(self, image):
         self.image_to_draw = image
+
+    def set_invalid(self):
+        self.set_image(self.image_invalid)
+
+    def set_valid(self):
+        self.set_image(self.image)
 
     def __repr__(self):
         return "Checker({!r}, {!r}, {!r}, {!r}, {!r}".format(self.x, self.y, self.color, self.image, self.image_crowned)
@@ -59,7 +66,7 @@ class Board(QWidget):
 
         self.checker_black = QtGui.QPixmap("images/checker_black_nv_50x50.png")
         self.image_crown_black = QtGui.QPixmap("images/checker_black_nv_crowned_50x50.png")
-        self.checker_black_invalid = QtGui.QPixmap("images/checker_black_nv_invalid_50x50.png")
+        self.checker_invalid = QtGui.QPixmap("images/invalid_50x50.png")
         self.checker_red = QtGui.QPixmap("images/checker_crab-1_50x50.png")
         self.image_crown_red = QtGui.QPixmap("images/checker_crab-1_crowned_50x50.png")
 
@@ -117,10 +124,11 @@ class Board(QWidget):
                                                  self.current_row, self.current_col)
             square_taken = self._is_square_taken(self.current_row, self.current_col)
             square_color = self.board[self.current_row][self.current_col]
-            if not self._is_valid_move(row_delta, col_delta, square_color, square_taken):
-                self.moving_checker.set_image(self.checker_black_invalid)
+            not_starting_square = (self.current_row != self.starting_row) or (self.current_col != self.starting_col)
+            if not self._is_valid_move(row_delta, col_delta, square_color, square_taken) and not_starting_square:
+                self.moving_checker.set_invalid()
             else:
-                self.moving_checker.set_image(self.checker_black)
+                self.moving_checker.set_valid()
             print("x={}, y={}, row={}, col= {}".format(me.x(), me.y(), self.current_row, self.current_col))
 
             self.moving_checker.x = me.x() - 25 - 10
@@ -214,12 +222,12 @@ class Board(QWidget):
         for row, col in black_positions:
             x = col * 75
             y = row * 75
-            checkers.append(Checker(x, y, "black", self.i_checker_black, self.image_crown_black))
+            checkers.append(Checker(x, y, "black", self.i_checker_black, self.image_crown_black, self.checker_invalid))
 
         for row, col in red_positions:
             x = col * 75
             y = row * 75
-            checkers.append(Checker(x, y, "red", self.i_checker_red, self.image_crown_red))
+            checkers.append(Checker(x, y, "red", self.i_checker_red, self.image_crown_red, self.checker_invalid))
 
     def find_checker(self, row, col, chkers):
         for checker in chkers:
@@ -239,17 +247,29 @@ class Board(QWidget):
 
         return self.find_checker(t_row, t_col, checkers)
 
-    def left(self):
-        return True if self.starting_col > self.ending_col else False
+    def left(self, *args):
+        if len(args):
+            return True if args[0] > args[1] else False
+        else:
+            return True if self.starting_col > self.ending_col else False
 
-    def right(self):
-        return True if self.starting_col < self.ending_col else False
+    def right(self, *args):
+        if len(args):
+            return True if args[0] < args[1] else False
+        else:
+            return True if self.starting_col < self.ending_col else False
 
-    def up(self):
-        return True if self.starting_row > self.ending_row else False
+    def up(self, *args):
+        if len(args):
+            return True if args[0] > args[1] else False
+        else:
+            return True if self.starting_row > self.ending_row else False
 
-    def down(self):
-        return True if self.starting_row < self.ending_row else False
+    def down(self, *args):
+        if len(args):
+            return True if args[0] < args[1] else False
+        else:
+            return True if self.starting_row < self.ending_row else False
 
     def distance(self, starting_row, starting_col, ending_row, ending_col):
         return abs(starting_row - ending_row), abs(starting_col - ending_col)
