@@ -126,14 +126,14 @@ class Board(QWidget):
             square_color = self.board[self.current_row][self.current_col]
             not_starting_square = (self.current_row != self.starting_row) or (self.current_col != self.starting_col)
             if not self._is_valid_move(row_delta, col_delta, square_color, square_taken) and not_starting_square:
+                self.moving_checker.set_invalid()
+            else:
                 jumped_checker = self.get_jumped_checker(self.starting_row, self.starting_col, self.current_row, self.current_col)
-                if row_delta == 2 and jumped_checker is None:
-                    print("mouseMoveEvent: row_delta = {}".format(row_delta))
+                if row_delta == 2 and jumped_checker is None or (self.moving_checker.color == "black" and self.up() and not self.moving_checker.is_king):
+                    print("mouseMoveEvent: row_delta = {}, jumped checker = {}".format(row_delta, jumped_checker))
                     self.moving_checker.set_invalid()
                 else:
-                    self.moving_checker.set_invalid()
-            else:
-                self.moving_checker.set_valid()
+                    self.moving_checker.set_valid()
             # print("x={}, y={}, row={}, col= {}".format(me.x(), me.y(), self.current_row, self.current_col))
 
             self.moving_checker.x = me.x() - 25 - 10
@@ -180,6 +180,7 @@ class Board(QWidget):
             if self.valid_move:
                 self.move_checker(self.ending_row, self.ending_col)
             else:
+                self.moving_checker.set_valid()
                 self.move_checker(self.starting_row, self.starting_col)
             self.update()
 
@@ -251,6 +252,8 @@ class Board(QWidget):
         elif self.up(starting_row, ending_row):
             t_row = ending_row + 1
             t_col = ending_col + 1 if self.left(starting_col, ending_col) else ending_col - 1
+        else:
+            return None
 
         return self.find_checker(t_row, t_col, checkers)
 
