@@ -125,7 +125,9 @@ class Board(QWidget):
             square_taken = self._is_square_taken(self.current_row, self.current_col)
             square_color = self.board[self.current_row][self.current_col]
             not_starting_square = (self.current_row != self.starting_row) or (self.current_col != self.starting_col)
-            if not self._is_valid_move(row_delta, col_delta, square_color, square_taken) and not_starting_square:
+            if self.current_row == self.starting_row and self.current_col == self.starting_col:
+                self.moving_checker.set_valid()
+            elif not self._is_valid_move(row_delta, col_delta, square_color, square_taken) and not_starting_square:
                 self.moving_checker.set_invalid()
             else:
                 jumped_checker = self.get_jumped_checker(self.starting_row, self.starting_col, self.current_row, self.current_col)
