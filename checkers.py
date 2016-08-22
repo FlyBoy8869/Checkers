@@ -125,24 +125,23 @@ class Board(QWidget):
             square_taken = self._is_square_taken(self.current_row, self.current_col)
             square_color = self.board[self.current_row][self.current_col]
             not_starting_square = (self.current_row != self.starting_row) or (self.current_col != self.starting_col)
-            if self.current_row == self.starting_row and self.current_col == self.starting_col:
+
+            valid_move = self._is_valid_move(row_delta, col_delta, square_color, square_taken)
+            if valid_move is True:
                 self.moving_checker.set_valid()
-            elif not self._is_valid_move(row_delta, col_delta, square_color, square_taken) and not_starting_square:
-                self.moving_checker.set_invalid()
             else:
-                jumped_checker = self.get_jumped_checker(self.starting_row, self.starting_col, self.current_row, self.current_col)
-                if row_delta == 2 and jumped_checker is None or (self.moving_checker.color == "black" and self.up() and not self.moving_checker.is_king):
-                    print("mouseMoveEvent: row_delta = {}, jumped checker = {}".format(row_delta, jumped_checker))
-                    self.moving_checker.set_invalid()
-                else:
-                    self.moving_checker.set_valid()
-            # print("x={}, y={}, row={}, col= {}".format(me.x(), me.y(), self.current_row, self.current_col))
+                self.moving_checker.set_invalid()
+
+            print("x={}, y={}, row={}, col={}, rd={}, cd={}, valid_move={}".format(me.x(), me.y(), self.current_row,
+                                                                    self.current_col, row_delta,
+                                                                    col_delta, valid_move))
 
             self.moving_checker.x = me.x() - 25 - 10
             self.moving_checker.y = me.y() - 25 - 10
             self.update()
 
     def mouseReleaseEvent(self, me):
+        print("Entered mouseReleaseEvent...")
         self.ending_row, self.ending_col = self._calc_row_col(me.x(), me.y())
         if (0 > self.ending_row) or (self.ending_row > 7)\
                 or (0 > self.ending_col) or (self.ending_col > 7):
@@ -206,8 +205,35 @@ class Board(QWidget):
         return False
 
     def _is_valid_move(self, rd, cd, sc, st):
-        if 0 < rd <= 2 and 0 < cd <= 2 and sc != "red" and not st:
+        # on starting square
+        if rd == 0 and cd == 0:
             return True
+
+        if sc == "red":
+            return False
+
+        if self._is_square_taken(self.current_row, self.current_col):
+            return False
+
+        if rd == 1 and cd == 1 and sc == "black":
+            if self.moving_checker.color == "black":
+                if self.moving_checker.is_king is False and self.up() is True:
+                    return False
+                else:
+                    return True
+
+            if self.moving_checker.color == "red":
+                if self.moving_checker.is_king is False and self.down() is True:
+                    return False
+                else:
+                    return True
+
+        if rd > 1 or cd > 1:
+            if rd == 2 and cd == 2 and self.get_jumped_checker(self.starting_row, self.starting_col,
+                                                               self.current_row, self.current_col) is not None:
+                return True
+            else:
+                return False
 
         return False
 
@@ -275,13 +301,13 @@ class Board(QWidget):
         if len(args):
             return True if args[0] > args[1] else False
         else:
-            return True if self.starting_row > self.ending_row else False
+            return True if self.starting_row > self.current_row else False
 
     def down(self, *args):
         if len(args):
             return True if args[0] < args[1] else False
         else:
-            return True if self.starting_row < self.ending_row else False
+            return True if self.starting_row < self.current_row else False
 
     def distance(self, starting_row, starting_col, ending_row, ending_col):
         return abs(starting_row - ending_row), abs(starting_col - ending_col)
