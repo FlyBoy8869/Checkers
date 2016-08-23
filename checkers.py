@@ -228,14 +228,18 @@ class Board(QWidget):
                 else:
                     return True
 
-        if rd > 1 or cd > 1:
-            if rd == 2 and cd == 2 and self.get_jumped_checker(self.starting_row, self.starting_col,
-                                                               self.current_row, self.current_col) is not None:
-                return True
+        if rd == 2 and cd == 2:
+            jumped_checker = self.get_jumped_checker(self.starting_row, self.starting_col,
+                                                     self.current_row, self.current_col)
+            if jumped_checker is not None:
+                if self.moving_checker.color == jumped_checker.color:
+                    return False
+                else:
+                    return True
             else:
                 return False
-
-        return False
+        else:
+            return False
 
     def _setup_board(self):
         board = []
