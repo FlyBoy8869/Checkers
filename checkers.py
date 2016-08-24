@@ -1,3 +1,4 @@
+import collections
 import sys
 from PyQt4 import QtGui, QtCore
 from PyQt4.QtGui import QWidget
@@ -7,6 +8,10 @@ checkers = []
 
 red_square = QtGui.QColor(102, 0, 0, 255)
 black_square = QtGui.QColor(0, 0, 0, 255)
+
+
+MovementMetrics = collections.namedtuple('MovementMetrics', ['current_row', 'current_col', 'row_delta', 'col_delta',
+                                                             'square_taken', 'square_color'])
 
 
 class Checker(object):
@@ -55,6 +60,7 @@ class Board(QWidget):
 
         self.remainder = 0
         self.moving_checker = None
+        self.jumped_checker = None
         self.starting_row = -1
         self.starting_col = -1
         self.ending_row = -1
@@ -119,74 +125,54 @@ class Board(QWidget):
 
     def mouseMoveEvent(self, me):
         if self.moving_checker:
-            self.current_row, self.current_col = self._calc_row_col(me.x(), me.y())
-            row_delta, col_delta = self.distance(self.starting_row, self.starting_col,
-                                                 self.current_row, self.current_col)
-            square_taken = self._is_square_taken(self.current_row, self.current_col)
-            square_color = self.board[self.current_row][self.current_col]
-            not_starting_square = (self.current_row != self.starting_row) or (self.current_col != self.starting_col)
-
-            valid_move = self._is_valid_move(row_delta, col_delta, square_color, square_taken)
+            metrics = self._get_movement_metrics(me)
+            valid_move = self._is_valid_move(metrics)
             if valid_move is True:
                 self.moving_checker.set_valid()
             else:
                 self.moving_checker.set_invalid()
 
-            print("x={}, y={}, row={}, col={}, rd={}, cd={}, valid_move={}".format(me.x(), me.y(), self.current_row,
-                                                                    self.current_col, row_delta,
-                                                                    col_delta, valid_move))
+            # print("x={}, y={}, row={}, col={}, rd={}, cd={}, valid_move={}".format(me.x(), me.y(), self.current_row,
+            #                                                        self.current_col, row_delta,
+            #                                                        col_delta, valid_move))
 
             self.moving_checker.x = me.x() - 25 - 10
             self.moving_checker.y = me.y() - 25 - 10
             self.update()
 
+    def _get_movement_metrics(self, mouse_move_event):
+        current_row, current_col = self._calc_row_col(mouse_move_event.x(), mouse_move_event.y())
+        row_delta, col_delta = self.distance(self.starting_row, self.starting_col, current_row, current_col)
+        square_taken = self._is_square_taken(current_row, current_col)
+        square_color = self.board[current_row][current_col]
+
+        return MovementMetrics(current_row=current_row, current_col=current_col, row_delta=row_delta,
+                               col_delta=col_delta, square_taken=square_taken, square_color=square_color)
+
     def mouseReleaseEvent(self, me):
         print("Entered mouseReleaseEvent...")
-        self.ending_row, self.ending_col = self._calc_row_col(me.x(), me.y())
-        if (0 > self.ending_row) or (self.ending_row > 7)\
-                or (0 > self.ending_col) or (self.ending_col > 7):
-            self.move_checker(self.starting_row, self.starting_col)
-            self.update()
-            return
-
-        square_color = self.board[self.ending_row][self.ending_col]
-        is_square_taken = self._is_square_taken(self.ending_row, self.ending_col)
-        row_delta, col_delta = self.distance(self.starting_row, self.starting_col,
-                                             self.ending_row, self.ending_col)
 
         if self.moving_checker is not None:
-            if 0 < row_delta <= 2 and 0 < col_delta <= 2 and square_color != "red" and not is_square_taken:
-                color = self.moving_checker.color
-                # this enforces non-king forward jumps
-                if row_delta == 2 and ((color == "black" and self.down()) or (color == "red" and self.up())):
-                    checker = self.get_jumped_checker(self.starting_row, self.starting_col,
-                                                      self.ending_row, self.ending_col)
-                    if checker and checker.color != self.moving_checker.color:
-                        self.valid_move = True
-                        checkers.remove(checker)
-                # this handles kings jumping forwards or backwards
-                elif row_delta == 2 and self.moving_checker.is_king:
-                    checker = self.get_jumped_checker(self.starting_row, self.starting_col,
-                                                      self.ending_row, self.ending_col)
-                    if checker and checker.color != self.moving_checker.color:
-                        self.valid_move = True
-                        checkers.remove(checker)
-                # this handles single square movement
-                elif ((color == "black" and self.down()) or (color == "red" and self.up())) or self.moving_checker.is_king:
-                    self.valid_move = True
+            metrics = self._get_movement_metrics(me)
+            if (0 > metrics.current_row) or (metrics.current_row > 7)\
+                    or (0 > metrics.current_col) or (metrics.current_col > 7):
+                self.move_checker(self.starting_row, self.starting_col)
+                self.update()
+                return
 
-                if (self.ending_row == 0 or self.ending_row == 7) and not self.moving_checker.is_king:
-                    self.moving_checker.king_me()
+            if self._is_valid_move(metrics) is True:
+                if self.jumped_checker is not None:
+                    checkers.remove(self.jumped_checker)
+                    self.jumped_checker = None
 
-            if self.valid_move:
-                self.move_checker(self.ending_row, self.ending_col)
+                self.move_checker(metrics.current_row, metrics.current_col)
             else:
                 self.moving_checker.set_valid()
                 self.move_checker(self.starting_row, self.starting_col)
+
             self.update()
 
-            self.moving_checker = None
-            self.valid_move = False
+        self.moving_checker = None
 
     def move_checker(self, row, col):
         self.moving_checker.x = col * Board.SQUARE
@@ -204,35 +190,37 @@ class Board(QWidget):
                 return True
         return False
 
-    def _is_valid_move(self, rd, cd, sc, st):
+    # def _is_valid_move(self, rd, cd, sc, st):
+    def _is_valid_move(self, metrics):
         # on starting square
-        if rd == 0 and cd == 0:
+        if metrics.row_delta == 0 and metrics.col_delta == 0:
             return True
 
-        if sc == "red":
+        if metrics.square_color == "red":
             return False
 
-        if self._is_square_taken(self.current_row, self.current_col):
+        # if self._is_square_taken(self.current_row, self.current_col):
+        if metrics.square_taken is True:
             return False
 
-        if rd == 1 and cd == 1 and sc == "black":
+        if metrics.row_delta == 1 and metrics.col_delta == 1 and metrics.square_color == "black":
             if self.moving_checker.color == "black":
-                if self.moving_checker.is_king is False and self.up() is True:
+                if self.moving_checker.is_king is False and self.up(self.starting_row, metrics.current_row) is True:
                     return False
                 else:
                     return True
 
             if self.moving_checker.color == "red":
-                if self.moving_checker.is_king is False and self.down() is True:
+                if self.moving_checker.is_king is False and self.down(self.starting_row, metrics.current_row) is True:
                     return False
                 else:
                     return True
 
-        if rd == 2 and cd == 2:
-            jumped_checker = self.get_jumped_checker(self.starting_row, self.starting_col,
-                                                     self.current_row, self.current_col)
-            if jumped_checker is not None:
-                if self.moving_checker.color == jumped_checker.color:
+        if metrics.row_delta == 2 and metrics.col_delta == 2:
+            self.jumped_checker = self.get_jumped_checker(self.starting_row, self.starting_col,
+                                                     metrics.current_row, metrics.current_col)
+            if self.jumped_checker is not None:
+                if self.moving_checker.color == self.jumped_checker.color:
                     return False
                 else:
                     return True
@@ -289,29 +277,17 @@ class Board(QWidget):
 
         return self.find_checker(t_row, t_col, checkers)
 
-    def left(self, *args):
-        if len(args):
-            return True if args[0] > args[1] else False
-        else:
-            return True if self.starting_col > self.ending_col else False
+    def left(self, starting_col, current_col):
+        return True if starting_col > current_col else False
 
-    def right(self, *args):
-        if len(args):
-            return True if args[0] < args[1] else False
-        else:
-            return True if self.starting_col < self.ending_col else False
+    def right(self, starting_col, current_col):
+        return True if starting_col < current_col else False
 
-    def up(self, *args):
-        if len(args):
-            return True if args[0] > args[1] else False
-        else:
-            return True if self.starting_row > self.current_row else False
+    def up(self, starting_row, current_row):
+        return True if starting_row > current_row else False
 
-    def down(self, *args):
-        if len(args):
-            return True if args[0] < args[1] else False
-        else:
-            return True if self.starting_row < self.current_row else False
+    def down(self, starting_row, current_row):
+        return True if starting_row < current_row else False
 
     def distance(self, starting_row, starting_col, ending_row, ending_col):
         return abs(starting_row - ending_row), abs(starting_col - ending_col)
