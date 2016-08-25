@@ -58,7 +58,6 @@ class Board(QWidget):
         QWidget.__init__(self, parent)
         self.setFixedSize(Board.SQUARE * 8 + 3, Board.SQUARE * 8 + 3)
 
-        self.remainder = 0
         self.moving_checker = None
         self.jumped_checker = None
         self.starting_row = -1
@@ -68,7 +67,6 @@ class Board(QWidget):
         self.current_row = - 1
         self.current_col = - 1
         self.jump_made = False
-        self.valid_move = False
 
         self.checker_black = QtGui.QPixmap("images/checker_black_nv_50x50.png")
         self.image_crown_black = QtGui.QPixmap("images/checker_black_nv_crowned_50x50.png")
@@ -106,13 +104,16 @@ class Board(QWidget):
                 y_offset = col * Board.SQUARE + 1
                 rect = QtCore.QRect(x_offset, y_offset, Board.SQUARE, Board.SQUARE)
                 qp.drawRect(rect)
-                color = red_square if col % 2 == self.remainder else black_square
+                color = red_square if col % 2 == Board.draw_board.remainder else black_square
                 rect = QtCore.QRect(x_offset + 1, y_offset + 1, Board.SQUARE - 1, Board.SQUARE - 1)
                 qp.fillRect(rect, color)
 
-            self.remainder = 1 if self.remainder == 0 else 0
+            Board.draw_board.remainder = 1 if Board.draw_board.remainder == 0 else 0
 
         qp.setPen(save_pen)
+
+    # "static" variable for draw_board
+    draw_board.remainder = 0
 
     def mousePressEvent(self, me):
         row, col = self._calc_row_col(me.x(), me.y())
