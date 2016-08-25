@@ -62,11 +62,11 @@ class Board(QWidget):
         self.jumped_checker = None
         self.starting_row = -1
         self.starting_col = -1
-        self.ending_row = -1
-        self.ending_col = -1
-        self.current_row = - 1
-        self.current_col = - 1
-        self.jump_made = False
+        # self.ending_row = -1
+        # self.ending_col = -1
+        # self.current_row = - 1
+        # self.current_col = - 1
+        # self.jump_made = False
 
         self.checker_black = QtGui.QPixmap("images/checker_black_nv_50x50.png")
         self.image_crown_black = QtGui.QPixmap("images/checker_black_nv_crowned_50x50.png")
@@ -166,6 +166,9 @@ class Board(QWidget):
                     checkers.remove(self.jumped_checker)
                     self.jumped_checker = None
 
+                if metrics.current_row == 7 or metrics.current_row == 0:
+                    self.moving_checker.is_king = True
+
                 self.move_checker(metrics.current_row, metrics.current_col)
             else:
                 self.moving_checker.set_valid()
@@ -219,7 +222,7 @@ class Board(QWidget):
 
         if metrics.row_delta == 2 and metrics.col_delta == 2:
             self.jumped_checker = self.get_jumped_checker(self.starting_row, self.starting_col,
-                                                     metrics.current_row, metrics.current_col)
+                                                          metrics.current_row, metrics.current_col)
             if self.jumped_checker is not None:
                 if self.moving_checker.color == self.jumped_checker.color:
                     return False
